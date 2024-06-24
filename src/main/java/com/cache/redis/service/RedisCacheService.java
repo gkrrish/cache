@@ -1,19 +1,18 @@
 package com.cache.redis.service;
 
-import java.util.*;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.stereotype.Service;
-
 import com.cache.entity.NewspaperFiles;
 import com.cache.entity.UserSubscription;
 import com.cache.model.RedisCacheObject;
 import com.cache.repository.NewspaperFilesRepository;
 import com.cache.repository.UserSubscriptionRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.stereotype.Service;
+
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Service
 public class RedisCacheService {
@@ -27,17 +26,25 @@ public class RedisCacheService {
     @Autowired
     private StringRedisTemplate redisTemplate;
 
-    public void createAndCacheBatchData() {
-        List<UserSubscription> subscriptions = getValidUserSubscriptions();
+    public boolean createAndCacheBatchData(Long batchId, String stateName, String language) {
+        List<UserSubscription> subscriptions = getValidUserSubscriptions(batchId, stateName, language);
         List<NewspaperFiles> files = getTodaysNewspaperFiles();
 
+        if (subscriptions.isEmpty()) {
+            return false;
+        }
+
         Map<String, RedisCacheObject> cacheObjects = createRedisCacheObjects(subscriptions, files);
-        cacheRedisObjects(cacheObjects);
+        return cacheRedisObjects(cacheObjects);
     }
 
-    private List<UserSubscription> getValidUserSubscriptions() {
+    private List<UserSubscription> getValidUserSubscriptions(Long batchId, String stateName, String language) {
         return userSubscriptionRepository.findAll().stream()
-                .filter(sub -> sub.getSubscriptionStartDate().before(new Date()) && sub.getSubscriptionEndDate().after(new Date()))
+                .filter(sub -> sub.getSubscriptionStartDate().before(new Date()) 
+                    && sub.getSubscriptionEndDate().after(new Date())
+                    && (batchId == null || sub.getBatch().getBatchId().equals(batchId))
+                    && (stateName == null || sub.getVendor().getLocation().getState().getStateName().equals(stateName))
+                    && (language == null || sub.getVendor().getNewspaperLanguage().getLanguageName().equals(language)))
                 .collect(Collectors.toList());
     }
 
@@ -58,7 +65,8 @@ public class RedisCacheService {
                 .collect(Collectors.toList());
     }
 
-    private Map<String, RedisCacheObject> createRedisCacheObjects(List<UserSubscription> subscriptions, List<NewspaperFiles> files) {
+    @SuppressWarnings("unused")
+	private Map<String, RedisCacheObject> createRedisCacheObjects(List<UserSubscription> subscriptions, List<NewspaperFiles> files) {
         Map<String, RedisCacheObject> cacheObjects = new HashMap<>();
 
         Map<Long, Map<String, Map<String, List<UserSubscription>>>> groupedSubscriptions = subscriptions.stream()
@@ -107,15 +115,22 @@ public class RedisCacheService {
         return cacheObjects;
     }
 
-    private void cacheRedisObjects(Map<String, RedisCacheObject> cacheObjects) {
-        cacheObjects.forEach((key, cacheObject) -> {
+    private boolean cacheRedisObjects(Map<String, RedisCacheObject> cacheObjects) {
+        if (cacheObjects.isEmpty()) {
+            return false;
+        }
+
+        boolean success = true;
+        for (Map.Entry<String, RedisCacheObject> entry : cacheObjects.entrySet()) {
             try {
-                String jsonString = new ObjectMapper().writeValueAsString(cacheObject);
-                redisTemplate.opsForValue().set(key, jsonString);
-                redisTemplate.expire(key, 60, TimeUnit.MINUTES);
+                String jsonString = new ObjectMapper().writeValueAsString(entry.getValue());
+                redisTemplate.opsForValue().set(entry.getKey(), jsonString);
+                redisTemplate.expire(entry.getKey(), 60, TimeUnit.MINUTES);
             } catch (Exception e) {
                 e.printStackTrace();
+                success = false;
             }
-        });
+        }
+        return success;
     }
 }
