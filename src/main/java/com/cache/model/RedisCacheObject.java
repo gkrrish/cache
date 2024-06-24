@@ -9,11 +9,21 @@ import java.util.Map;
 public class RedisCacheObject {
 
     private Long batchTime;
+    private String state;
+    private String language;
     private List<UserInfo> users;
     private List<NewspaperInfo> newspapers;
 
     public void setBatchTime(Long batchTime) {
         this.batchTime = batchTime;
+    }
+
+    public void setState(String state) {
+        this.state = state;
+    }
+
+    public void setLanguage(String language) {
+        this.language = language;
     }
 
     public void setUsers(List<UserInfo> users) {
