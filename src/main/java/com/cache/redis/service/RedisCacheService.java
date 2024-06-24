@@ -133,4 +133,8 @@ public class RedisCacheService {
         }
         return success;
     }
+    
+    public void removeCacheByKey(String key) {
+        redisTemplate.delete(key);
+    }
 }
