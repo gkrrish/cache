@@ -37,10 +37,12 @@ public class RedisCacheObject {
     @Data
     public static class UserInfo {
         private Long userId;
+        private String userMobileNumber;
         private String email;
 
-        public UserInfo(Long userId, String email) {
+        public UserInfo(Long userId,String userMobileNumber, String email) {
             this.userId = userId;
+            this.userMobileNumber=userMobileNumber;
             this.email = email;
         }
     }

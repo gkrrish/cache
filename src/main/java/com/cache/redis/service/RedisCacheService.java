@@ -87,7 +87,7 @@ public class RedisCacheService {
                     cacheObject.setLanguage(language);
 
                     cacheObject.setUsers(subs.stream()
-                            .map(sub -> new RedisCacheObject.UserInfo(sub.getUserDetails().getUserid(), sub.getUserDetails().getUsername()))
+                            .map(sub -> new RedisCacheObject.UserInfo(sub.getUserDetails().getUserid(), sub.getUserDetails().getMobileNumber(), sub.getUserDetails().getUsername()))
                             .collect(Collectors.toList()));
 
                     Map<Long, List<UserSubscription>> newspaperGroups = subs.stream()
