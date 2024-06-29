@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.cache.model.RedisCacheObject;
 import com.cache.redis.service.RedisCacheService;
 
 @RestController
@@ -37,5 +38,10 @@ public class CacheController {
     public String updateCacheByBatchIdStateAndLanguage(@PathVariable Long batchId, @PathVariable String stateName, @PathVariable String language) {
         boolean success = redisCacheService.createAndCacheBatchData(batchId, stateName, language);
         return success ? "Cache Updated for batchId: " + batchId + ", state: " + stateName + " and language: " + language : "Failed to update cache for batchId: " + batchId + ", state: " + stateName + " and language: " + language;
+    }
+    
+    @GetMapping("/get/{key}")
+    public RedisCacheObject getDataFromCache(@PathVariable String key) {
+        return redisCacheService.getDataFromCache(key);
     }
 }

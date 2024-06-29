@@ -65,11 +65,8 @@ public class RedisCacheService {
                 .collect(Collectors.toList());
     }
 
-    @SuppressWarnings("unused")
-	private Map<String, RedisCacheObject> createRedisCacheObjects(List<UserSubscription> subscriptions, List<NewspaperFiles> files) {
-        Map<String, RedisCacheObject> cacheObjects = new HashMap<>();
-
-        Map<Long, Map<String, Map<String, List<UserSubscription>>>> groupedSubscriptions = subscriptions.stream()
+    private Map<Long, Map<String, Map<String, List<UserSubscription>>>> groupSubscriptions(List<UserSubscription> subscriptions) {
+        return subscriptions.stream()
                 .collect(Collectors.groupingBy(
                         sub -> sub.getBatch().getBatchId(),
                         Collectors.groupingBy(
@@ -77,36 +74,46 @@ public class RedisCacheService {
                                 Collectors.groupingBy(sub -> sub.getVendor().getNewspaperLanguage().getLanguageName())
                         )
                 ));
+    }
+
+    private RedisCacheObject createCacheObject(Long batchTime, String state, String language, List<UserSubscription> subs, List<NewspaperFiles> files) {
+        RedisCacheObject cacheObject = new RedisCacheObject();
+        cacheObject.setBatchTime(batchTime);
+        cacheObject.setState(state);
+        cacheObject.setLanguage(language);
+
+        cacheObject.setUsers(subs.stream()
+                .map(sub -> new RedisCacheObject.UserInfo(sub.getUserDetails().getUserid(), sub.getUserDetails().getMobileNumber(), sub.getUserDetails().getUsername()))
+                .collect(Collectors.toList()));
+
+        Map<Long, List<UserSubscription>> newspaperGroups = subs.stream()
+                .collect(Collectors.groupingBy(sub -> sub.getVendor().getId().getNewspaperId()));
+
+        cacheObject.setNewspapers(newspaperGroups.entrySet().stream().map(entry -> {
+            Long newspaperId = entry.getKey();
+            Map<String, List<Long>> fileLocations = files.stream()
+                    .filter(file -> file.getVendor().getId().getNewspaperId().equals(newspaperId))
+                    .collect(Collectors.groupingBy(NewspaperFiles::getFileLocation,
+                            Collectors.mapping(file -> file.getVendor().getLocation().getLocationId(), Collectors.toList())));
+            RedisCacheObject.NewspaperInfo newspaperInfo = new RedisCacheObject.NewspaperInfo();
+            newspaperInfo.setNewspaperId(newspaperId);
+            newspaperInfo.setFileLocations(fileLocations);
+            return newspaperInfo;
+        }).collect(Collectors.toList()));
+
+        return cacheObject;
+    }
+
+    private Map<String, RedisCacheObject> buildCacheObjects(Map<Long, Map<String, Map<String, List<UserSubscription>>>> groupedSubscriptions, List<NewspaperFiles> files) {
+        Map<String, RedisCacheObject> cacheObjects = new HashMap<>();
 
         groupedSubscriptions.forEach((batchTime, stateMap) -> {
             stateMap.forEach((state, languageMap) -> {
                 languageMap.forEach((language, subs) -> {
-                    RedisCacheObject cacheObject = new RedisCacheObject();
-                    cacheObject.setBatchTime(batchTime);
-                    cacheObject.setState(state);
-                    cacheObject.setLanguage(language);
-
-                    cacheObject.setUsers(subs.stream()
-                            .map(sub -> new RedisCacheObject.UserInfo(sub.getUserDetails().getUserid(), sub.getUserDetails().getMobileNumber(), sub.getUserDetails().getUsername()))
-                            .collect(Collectors.toList()));
-
-                    Map<Long, List<UserSubscription>> newspaperGroups = subs.stream()
-                            .collect(Collectors.groupingBy(sub -> sub.getVendor().getId().getNewspaperId()));
-
-                    cacheObject.setNewspapers(newspaperGroups.entrySet().stream().map(entry -> {
-                        Long newspaperId = entry.getKey();
-                        List<UserSubscription> groupSubs = entry.getValue();
-                        Map<String, List<Long>> fileLocations = files.stream()
-                                .filter(file -> file.getVendor().getId().getNewspaperId().equals(newspaperId))
-                                .collect(Collectors.groupingBy(NewspaperFiles::getFileLocation,
-                                        Collectors.mapping(file -> file.getVendor().getLocation().getLocationId(), Collectors.toList())));
-                        RedisCacheObject.NewspaperInfo newspaperInfo = new RedisCacheObject.NewspaperInfo();
-                        newspaperInfo.setNewspaperId(newspaperId);
-                        newspaperInfo.setFileLocations(fileLocations);
-                        return newspaperInfo;
-                    }).collect(Collectors.toList()));
-
+                    RedisCacheObject cacheObject = createCacheObject(batchTime, state, language, subs, files);
                     String key = "batch:" + batchTime + ":state:" + state + ":language:" + language;
+                    
+                    System.out.println("******** Key : "+key);
                     cacheObjects.put(key, cacheObject);
                 });
             });
@@ -114,6 +121,28 @@ public class RedisCacheService {
 
         return cacheObjects;
     }
+
+    public Map<String, RedisCacheObject> createRedisCacheObjects(List<UserSubscription> subscriptions, List<NewspaperFiles> files) {
+        Map<Long, Map<String, Map<String, List<UserSubscription>>>> groupedSubscriptions = groupSubscriptions(subscriptions);
+        return buildCacheObjects(groupedSubscriptions, files);
+    }
+
+    public void saveDataToCache(String key, String data) {
+        redisTemplate.opsForValue().set(key, data);
+    }
+
+    public RedisCacheObject getDataFromCache(String key) {
+        String data = redisTemplate.opsForValue().get(key);
+        if (data != null) {
+            try {
+                return new ObjectMapper().readValue(data, RedisCacheObject.class);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        return null;
+    }
+
 
     private boolean cacheRedisObjects(Map<String, RedisCacheObject> cacheObjects) {
         if (cacheObjects.isEmpty()) {
