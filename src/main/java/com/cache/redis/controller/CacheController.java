@@ -16,27 +16,21 @@ public class CacheController {
 	@Autowired
     private RedisCacheService redisCacheService;
 
-    @GetMapping("/update")
-    public String updateCache() {
-        boolean success = redisCacheService.createAndCacheBatchData(null, null, null);
-        return success ? "Cache Updated!" : "Failed to update cache.";
-    }
-
     @GetMapping("/update/batch/{batchId}")
     public String updateCacheByBatchId(@PathVariable Long batchId) {
-        boolean success = redisCacheService.createAndCacheBatchData(batchId, null, null);
+        boolean success = redisCacheService.createCacheData(batchId, null, null);
         return success ? "Cache Updated for batchId: " + batchId : "Failed to update cache for batchId: " + batchId;
     }
 
     @GetMapping("/update/batch/{batchId}/state/{stateName}")
     public String updateCacheByBatchIdAndState(@PathVariable Long batchId, @PathVariable String stateName) {
-        boolean success = redisCacheService.createAndCacheBatchData(batchId, stateName, null);
+        boolean success = redisCacheService.createCacheData(batchId, stateName, null);
         return success ? "Cache Updated for batchId: " + batchId + " and state: " + stateName : "Failed to update cache for batchId: " + batchId + " and state: " + stateName;
-    }
+    }//some of controllers are not needed, if multiple state or single state muliple languages there means how the RedisCacheObject handles?
 
     @GetMapping("/update/batch/{batchId}/state/{stateName}/language/{language}")
     public String updateCacheByBatchIdStateAndLanguage(@PathVariable Long batchId, @PathVariable String stateName, @PathVariable String language) {
-        boolean success = redisCacheService.createAndCacheBatchData(batchId, stateName, language);
+        boolean success = redisCacheService.createCacheData(batchId, stateName, language);
         return success ? "Cache Updated for batchId: " + batchId + ", state: " + stateName + " and language: " + language : "Failed to update cache for batchId: " + batchId + ", state: " + stateName + " and language: " + language;
     }
     

@@ -1,7 +1,6 @@
 package com.cache.model;
 
 import java.util.List;
-import java.util.Map;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -56,6 +55,7 @@ public class RedisCacheObject {
 		private Long userId;
 		private String userMobileNumber;
 		private String email;
+		private Long newspaperId; // matches with associateNewspaperIds
 	}
 
 	@Data
@@ -64,15 +64,9 @@ public class RedisCacheObject {
 	@AllArgsConstructor
 	@EqualsAndHashCode
 	public static class NewspaperInfo {
-		private Long newspaperId;
-		private Map<String, List<Long>> fileLocations;
-
-		public void setNewspaperId(Long newspaperId) {
-			this.newspaperId = newspaperId;
-		}
-
-		public void setFileLocations(Map<String, List<Long>> fileLocations) {
-			this.fileLocations = fileLocations;
-		}
+		private Long newspaperFileId;
+		private String newsPaperfileName;
+		private List<Long> associateNewspaperIds;
+		
 	}
 }
