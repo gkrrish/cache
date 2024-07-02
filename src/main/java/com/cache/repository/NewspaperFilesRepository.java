@@ -25,4 +25,5 @@ public interface NewspaperFilesRepository extends JpaRepository<NewspaperFiles, 
             "AND (nl.language_name = :languageName OR :languageName IS NULL)", 
     nativeQuery = true)
 	List<NewspaperFiles> findTodaysNewspaperFiles(@Param("stateName") String stateName, @Param("languageName") String languageName);
+	//be-cautious the date should be today in database
 }

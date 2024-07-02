@@ -26,7 +26,7 @@ public class CacheController {
     public String updateCacheByBatchIdAndState(@PathVariable Long batchId, @PathVariable String stateName) {
         boolean success = redisCacheService.createCacheData(batchId, stateName, null);
         return success ? "Cache Updated for batchId: " + batchId + " and state: " + stateName : "Failed to update cache for batchId: " + batchId + " and state: " + stateName;
-    }//some of controllers are not needed, if multiple state or single state muliple languages there means how the RedisCacheObject handles?
+    }//some of controllers are not needed, if multiple state or single state multiple languages there means how the RedisCacheObject handles?
 
     @GetMapping("/update/batch/{batchId}/state/{stateName}/language/{language}")
     public String updateCacheByBatchIdStateAndLanguage(@PathVariable Long batchId, @PathVariable String stateName, @PathVariable String language) {

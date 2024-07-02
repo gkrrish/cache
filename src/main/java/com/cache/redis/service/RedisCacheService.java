@@ -44,7 +44,11 @@ public class RedisCacheService {
     }
     
     private List<UserSubscription> getActiveSubscribers(Long batchId, String stateName, String language) {
-        return userSubscriptionRepository.findValidUserSubscriptions(batchId, stateName, language);
+    	List<UserSubscription> validUserSubscriptions = userSubscriptionRepository.findValidUserSubscriptions(batchId, stateName, language);
+    	if(validUserSubscriptions==null) {
+    		throw new RuntimeException("No Active Users found in User-Subscription, might be a Subscription Dates Ended?");
+    	}
+        return validUserSubscriptions;
     }
 
     private List<NewspaperInfo> getTodayNewspaperFiles(String stateName, String languageName) {
@@ -53,6 +57,8 @@ public class RedisCacheService {
     	
     	if(todaysNewspaperFiles!=null) {
     	 uniqueNewspaperFiles = getUniqueNewspaperFiles(todaysNewspaperFiles);
+    	}else if(todaysNewspaperFiles==null) {
+    		throw new RuntimeException("Looks, Today newspapers are't updated.");
     	}
         return uniqueNewspaperFiles;
     }
