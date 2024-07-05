@@ -35,8 +35,8 @@ public interface UserSubscriptionRepository extends JpaRepository<UserSubscripti
 	    List<UserSubscription> findValidUserSubscriptions(
 	            @Param("batchId") Long batchId,
 	            @Param("stateName") String stateName,
-	            @Param("language") String language);
-}
+	            @Param("language") String language);//as of now leaving this method, later check properly, performance wise and optimization and accurateness because unable to test properly due to deadline
+}//and design a UI, from ther validate everything properly.
 
 //mostly newspaper id has unique mandal id, and mandal id is nothing but location id, vendor and user_subscription tables are important to understand the constrains and flow of the application.
 //end of completion of application write a neat notes for database relations so next time understanding will be easy
