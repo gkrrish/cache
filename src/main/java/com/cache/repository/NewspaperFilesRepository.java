@@ -12,6 +12,10 @@ import com.cache.entity.NewspaperFiles;
 @Repository
 public interface NewspaperFilesRepository extends JpaRepository<NewspaperFiles, Long> {
 	
+	/**
+	 * If Today newspaper is not available in the database then gives an empty list.
+	 */
+	
 	@Query(value = "SELECT nf.* FROM NEWSPAPER_FILES nf " +
             "JOIN VENDORS v ON nf.newspaper_id = v.newspaper_id " +
             "AND nf.location_id = v.location_id " +
@@ -25,5 +29,5 @@ public interface NewspaperFilesRepository extends JpaRepository<NewspaperFiles, 
             "AND (nl.language_name = :languageName OR :languageName IS NULL)", 
     nativeQuery = true)
 	List<NewspaperFiles> findTodaysNewspaperFiles(@Param("stateName") String stateName, @Param("languageName") String languageName);
-	//be-cautious the date should be today in database
+	
 }
